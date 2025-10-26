@@ -83,18 +83,6 @@ class ExcelPreviewControl(ft.Column):
             icon=ft.Icons.FILE_OPEN
         )
 
-        self.apply_filter_button = ft.ElevatedButton(
-            text="剔除空值行并覆写",
-            icon=ft.Icons.DELETE_SWEEP,
-            style=ft.ButtonStyle(
-                bgcolor=ft.Colors.RED_400,
-                color=ft.Colors.WHITE,
-                shape=ft.RoundedRectangleBorder(radius=10),
-                padding=ft.padding.symmetric(horizontal=20, vertical=10),
-            ),
-            on_click=self.open_filter_dialog,  # 打开筛选对话框
-        )
-
         self.scrollable_table = ft.Container(
             content=ft.Column(
                 controls=[
@@ -112,7 +100,7 @@ class ExcelPreviewControl(ft.Column):
         self.controls = [
             ft.Row(
                 [self.sheet_dropdown, self.select_file_button, self.refresh_button,
-                 self.open_button, self.remote_load_btn, self.apply_filter_button],
+                 self.open_button, self.remote_load_btn],
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=10
             ),
@@ -133,67 +121,6 @@ class ExcelPreviewControl(ft.Column):
         # 初始化表格数据
         if self.sheet_dropdown.value:
             self.update_table(self.sheet_dropdown.value)
-
-    def open_filter_dialog(self, e):
-        """打开列选择对话框"""
-        sheet_name = self.sheet_dropdown.value
-        if not sheet_name:
-            self._page.snack_bar = ft.SnackBar(ft.Text("请先选择工作表"), open=True)
-            self._page.update()
-            return
-
-        sheet = self.excel_tool.get_sheet(sheet_name)
-        col_count = self.excel_tool.get_column_count(sheet)
-        headers = [
-            sheet.cell(row=self.excel_tool.header_row, column=col).value or f"Column {col}"
-            for col in range(1, col_count + 1)
-        ]
-
-        # 创建复选框组
-        checkboxes = [ft.Checkbox(label=header, value=False) for header in headers]
-
-        def on_confirm(ev):
-            selected_cols = [cb.label for cb in checkboxes if cb.value]
-            getattr(self._page, "dialog").open = False
-            self._page.update()
-            if selected_cols:
-                self.filter_non_empty_rows(selected_cols)
-            else:
-                self._page.snack_bar = ft.SnackBar(ft.Text("未选择任何列"), open=True)
-                self._page.update()
-
-        # ✅ 用 setattr 而不是直接赋值
-        setattr(
-            self._page,
-            "dialog",
-            ft.AlertDialog(
-                modal=True,
-                title=ft.Text("选择要剔除空值的列"),
-                content=ft.Container(
-                    content=ft.Column(
-                        controls=checkboxes,
-                        scroll=ft.ScrollMode.AUTO,
-                        expand=True,
-                    ),
-                    width=400,
-                    height=400,
-                ),
-                actions=[
-                    ft.TextButton("取消", on_click=lambda e: self.close_dialog()),
-                    ft.TextButton("确定", on_click=on_confirm),
-                ],
-            ),
-        )
-
-        # ✅ 同样用 getattr 来访问
-        getattr(self._page, "dialog").open = True
-        self._page.update()
-
-    def close_dialog(self):
-        dialog = getattr(self._page, "dialog", None)
-        if dialog:
-            dialog.open = False
-            self._page.update()
 
     def update_table(self, sheet_name: str):
         if not sheet_name:
@@ -248,10 +175,19 @@ class ExcelPreviewControl(ft.Column):
 
     def write_table_data(self, data):
         """
-        写入表格数据
+        完全覆写 Excel 表格，包括表头
         :param data: 可以是 list 或 dict（包含 "values" 键）
         """
-        sheet = self.excel_tool.get_sheet(self.excel_tool.get_sheet_names()[0])
+        sheet_name = self.excel_tool.get_sheet_names()[0]
+        sheet = self.excel_tool.get_sheet(sheet_name)
+
+        # 清空整个表格
+        max_row = sheet.max_row
+        max_col = sheet.max_column
+        if max_row > 0:
+            sheet.delete_rows(1, max_row)
+        if max_col > 0:
+            sheet.delete_cols(1, max_col)
 
         # 兼容两种数据格式
         if isinstance(data, dict):
@@ -261,28 +197,35 @@ class ExcelPreviewControl(ft.Column):
         else:
             raise ValueError("data 必须是 list 或 dict 类型")
 
-        # 跳过表头（第一行）
-        for row_idx, row_data in enumerate(values[1:], start=self.excel_tool.header_row + 1):
-            processed_row = []
+        if not values:
+            self.excel_tool.save()
+            self._page.update()
+            return
+
+        # 写入表头 + 数据
+        for row_idx, row_data in enumerate(values, start=1):
             for col_idx, value in enumerate(row_data, start=1):
+                # 处理链接类型
                 if isinstance(value, list) and value and isinstance(value[0], dict) and "link" in value[0]:
-                    cell_value = value[0]["link"] if value else None
+                    cell_value = value[0]["link"]
+                # 处理日期列（17、18列）
                 elif isinstance(value, (int, float)) and col_idx in [17, 18]:
                     try:
                         cell_value = datetime.fromordinal(
-                            datetime(1900, 1, 1).toordinal() + int(value) - 2).strftime(
-                            "%Y-%m-%d")
+                            datetime(1900, 1, 1).toordinal() + int(value) - 2
+                        ).strftime("%Y-%m-%d")
                     except (ValueError, TypeError):
                         cell_value = value
                 else:
                     cell_value = value
-                processed_row.append(cell_value)
+
                 self.excel_tool.write_cell(
                     sheet=sheet,
                     row=row_idx,
                     col=col_idx,
                     value=cell_value,
                 )
+
         self.excel_tool.save()
         self._page.update()
 
@@ -372,20 +315,51 @@ class ExcelPreviewControl(ft.Column):
 
         token = main_app.token_storage.get("user_token")
         spreadsheets_token = main_app.sheet_storage.get("spreadsheets")
-        sheet_id = main_app.sheet_storage.get("sheets")
 
+        codelist = [["订单号"]]
+        for sheet_id in main_app.sheet_storage.get("sheets"):
+            try:
+                value_range = get_table_filter(token, spreadsheets_token, sheet_id)
+                print(f"获取表数据成功:范围=> {value_range}")
+                logger.success(f"获取表数据成功:范围=> {value_range}")
+
+                values = get_table_value(token, spreadsheets_token, value_range)
+                if not values or len(values) < 2:
+                    logger.warning(f"{sheet_id} 表数据为空或无效")
+                    continue
+                header = values[0]
+                # 必须同时存在“序号”和“履约方式”
+                if "序号" not in header or "履约方式" not in header or "订单号" not in header:
+                    logger.warning(f"{sheet_id} 表头不含关键列，跳过：{header}")
+                    continue
+
+                idx_xh = header.index("序号")
+                idx_ly = header.index("履约方式")
+                idx_order = header.index("订单号")
+                i = 0
+                for row in values[1:]:
+                    try:
+                        xh = row[idx_xh] if idx_xh < len(row) else None
+                        ly = row[idx_ly] if idx_ly < len(row) else None
+                        order = row[idx_order] if idx_order < len(row) else None
+
+                        if xh not in (None, "", "null") and ly in (None, "", "null") and order not in (None, "", "null"):
+                            codelist.append([order])
+                            i=i+1
+                    except Exception as row_ex:
+                        logger.warning(f"解析行时出错：{row_ex} => {row}")
+
+                logger.success(f"{sheet_id} ✅筛选完成，共提取 {i} 条")
+
+            except Exception as ex:
+                print(f"获取表数据失败: {ex}")
+                logger.error(f"获取表数据失败: {ex}")
+                self._page.update()
         try:
-            value_range = get_table_filter(token, spreadsheets_token, sheet_id)
-            print(f"获取表数据成功:范围=> {value_range}")
-            logger.success(f"获取表数据成功:范围=> {value_range}")
-            values = get_table_value(token, spreadsheets_token, value_range)
-            self.write_table_data(values)
-            logger.success(f"获取表数据成功:=> {values[:2]}")
+            self.write_table_data(codelist)
             self.update_table(self.sheet_dropdown.value)
         except Exception as ex:
-            print(f"获取表数据失败: {ex}")
-            logger.error(f"获取表数据失败: {ex}")
-            self._page.update()
+            logger.error(f"提取订单号失败=>{ex}")
 
     def on_file_picked(self, e):
         if e.files and len(e.files) > 0:

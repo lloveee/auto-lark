@@ -63,7 +63,7 @@ class HomePage(ft.Column):
             options=sheets_options,
             width=200,
             disabled=not sheets_options,
-            on_change=self._on_sheet_change,
+            #on_change=self._on_sheet_change,
         )
 
         update_button = ft.ElevatedButton(
@@ -153,9 +153,16 @@ class HomePage(ft.Column):
                 self.dropdown_sheet.disabled = len(options) == 0
                 self.dropdown_sheet.label = "暂无数据" if len(options) == 0 else "选择表"
 
+                if main_app and main_app.auth_status:
+                    sheet_ids = [s["sheet_id"] for s in sheets if "sheet_id" in s]
+                    main_app.sheet_storage.set("sheets", sheet_ids)
+                    logger.info(f"表id更新为{sheet_ids}")
+                else:
+                    logger.error("请先完成飞书授权")
+
                 # 如果有选中值，触发 sheet change
-                if self.dropdown_sheet.value:
-                    self._on_sheet_change(None)
+                #if self.dropdown_sheet.value:
+                #    self._on_sheet_change(None)
             except Exception as ex:
                 logger.error(f"获取 sheets 失败: {ex}")
                 self.page.snack_bar = ft.SnackBar(ft.Text(f"获取 sheets 失败: {str(ex)}"))

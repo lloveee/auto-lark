@@ -32,7 +32,8 @@ LOG_FILE = LOG_DIR / "automation.log"
 APP_ID = get_env("APP_ID")
 APP_SECRET = get_env("APP_SECRET")
 REDIRECT_URI = get_env("REDIRECT_URI")
-SPREADSHEET_TOKEN = get_env("SPREADSHEET_TOKEN")
+tokens = get_env("SPREADSHEET_TOKEN")
+SPREADSHEET_TOKEN = tokens.split(",") if tokens else []
 SHEET_ID = get_env("SHEET_ID")
 
 #持久化数据

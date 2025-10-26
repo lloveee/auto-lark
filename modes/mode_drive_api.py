@@ -32,12 +32,13 @@ def get_spreadsheetToken(access_token, page_size = 50):
         raise e
     """
     return [
-            {
-                "name":"公司",
-                "parent_token":"fldcnCEG903UUB4fUqfysdabcef",
-                "token":SPREADSHEET_TOKEN,
-                "type":"sheet"
-            }
+        {
+            "name": f"表_{i + 1}",  # i 从 0 开始，所以 +1
+            "parent_token": "fldcnCEG903UUB4fUqfysdabcef",
+            "token": token,
+            "type": "sheet"
+        }
+        for i, token in enumerate(SPREADSHEET_TOKEN)
     ]
 """
 {

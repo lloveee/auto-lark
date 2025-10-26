@@ -39,17 +39,13 @@ class MainApp:
         if self.page.data is None:
             self.page.data = {}
         self.page.data['main_app'] = self
-
         self.setup_page()
         self.build_ui()
         self._check_stored_token()
         self.home_page.on_update_cache_click(None)
-
         # 启动异步服务器
-
         self.page.run_task(self._start_local_server)
         logger.success("回调服务器启动 => 127.0.0.1:3000/callback")
-
     def setup_page(self):
         """配置页面"""
         self.page.title = "现代化飞书框架"
