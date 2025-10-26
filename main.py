@@ -6,8 +6,6 @@ import flet as ft
 import flet_webview as ftwv
 import asyncio
 import time
-
-from modes.excel.excel_tool import ExcelTool
 from ui.console import Console
 from core.logger import logger
 from ui.pages.home_page import HomePage
@@ -25,6 +23,7 @@ class MainApp:
     """主应用程序"""
 
     def __init__(self, page: ft.Page):
+
         self.page = page
         self.access_token = None
         self.tab_counter = 0
@@ -33,7 +32,6 @@ class MainApp:
         self.console_expanded = True
         self.auth_status = False
         self.auth_indicator = None
-
         #storage
         self.token_storage = Storage(TOKEN_STORE_FILE)
         self.sheet_storage = Storage(SHEET_STORE_FILE)
@@ -260,18 +258,18 @@ class MainApp:
         self.page.update()
 
         logger.info("主页已加载")
-
     def _add_lvyue_tab(self, index, text):
-
         from modes.excel.excel_tool import ExcelTool
+        from ui.controls.excel_preview_control import ExcelPreviewControl
         # 添加标签
-
         lvyue_excel = ExcelTool(
             file_name="查履约test.xlsx",
             header_row=1,
         )
+
         lvyue_excel.save()
-        lvyue_page = LvYuePage(lvyue_excel.preview_with_flet(self.page))
+        excel_panel = ExcelPreviewControl(lvyue_excel, self.page)
+        lvyue_page = LvYuePage(excel_panel)
 
         tab = ft.Tab(
             content=lvyue_page,
@@ -287,7 +285,6 @@ class MainApp:
         self.tabs_control.tabs.append(tab)
         self.page.update()
         logger.info(f"{text}页面已加载")
-
     def _add_yangping_tab(self, index, text):
         yangping_page = YangPingPage()
 
@@ -308,7 +305,6 @@ class MainApp:
         self.page.update()
 
         logger.info(f"{text}页面已加载")
-
     def _add_shiping_tab(self, index, text):
         shipingma_page = ShiPingMaPage()
 
@@ -392,7 +388,6 @@ class MainApp:
         self.page.update()
 
         logger.info(f"新建浏览器标签页 {tab_id}")
-
     def _close_tab(self, tab_id: int):
         """关闭标签页"""
         # 找到并移除标签页 (不能关闭主页)
