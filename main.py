@@ -258,6 +258,7 @@ class MainApp:
         self.page.update()
 
         logger.info("主页已加载")
+
     def _add_lvyue_tab(self, index, text):
         from modes.excel.excel_tool import ExcelTool
         from ui.controls.excel_preview_control import ExcelPreviewControl
@@ -270,7 +271,6 @@ class MainApp:
         lvyue_excel.save()
         excel_panel = ExcelPreviewControl(lvyue_excel, self.page)
         lvyue_page = LvYuePage(excel_panel)
-
         tab = ft.Tab(
             content=lvyue_page,
             tab_content=ft.Row(

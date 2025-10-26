@@ -380,7 +380,7 @@ class ExcelPreviewControl(ft.Column):
             logger.success(f"获取表数据成功:范围=> {value_range}")
             values = get_table_value(token, spreadsheets_token, value_range)
             self.write_table_data(values)
-            logger.success(f"获取表数据成功:=> {values[:10]}")
+            logger.success(f"获取表数据成功:=> {values[:2]}")
             self.update_table(self.sheet_dropdown.value)
         except Exception as ex:
             print(f"获取表数据失败: {ex}")
