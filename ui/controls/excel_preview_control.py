@@ -24,6 +24,7 @@ class ExcelPreviewControl(ft.Column):
         self.refresh_button = None
         self.scrollable_table = None
         self.open_button = None
+        self.apply_filter_button = None
 
         # 立即构建 UI
         self._build_ui()
@@ -82,6 +83,18 @@ class ExcelPreviewControl(ft.Column):
             icon=ft.Icons.FILE_OPEN
         )
 
+        self.apply_filter_button = ft.ElevatedButton(
+            text="剔除空值行并覆写",
+            icon=ft.Icons.DELETE_SWEEP,
+            style=ft.ButtonStyle(
+                bgcolor=ft.Colors.RED_400,
+                color=ft.Colors.WHITE,
+                shape=ft.RoundedRectangleBorder(radius=10),
+                padding=ft.padding.symmetric(horizontal=20, vertical=10),
+            ),
+            on_click=self.open_filter_dialog,  # 打开筛选对话框
+        )
+
         self.scrollable_table = ft.Container(
             content=ft.Column(
                 controls=[
@@ -99,7 +112,7 @@ class ExcelPreviewControl(ft.Column):
         self.controls = [
             ft.Row(
                 [self.sheet_dropdown, self.select_file_button, self.refresh_button,
-                 self.open_button, self.remote_load_btn],
+                 self.open_button, self.remote_load_btn, self.apply_filter_button],
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=10
             ),
@@ -120,6 +133,67 @@ class ExcelPreviewControl(ft.Column):
         # 初始化表格数据
         if self.sheet_dropdown.value:
             self.update_table(self.sheet_dropdown.value)
+
+    def open_filter_dialog(self, e):
+        """打开列选择对话框"""
+        sheet_name = self.sheet_dropdown.value
+        if not sheet_name:
+            self._page.snack_bar = ft.SnackBar(ft.Text("请先选择工作表"), open=True)
+            self._page.update()
+            return
+
+        sheet = self.excel_tool.get_sheet(sheet_name)
+        col_count = self.excel_tool.get_column_count(sheet)
+        headers = [
+            sheet.cell(row=self.excel_tool.header_row, column=col).value or f"Column {col}"
+            for col in range(1, col_count + 1)
+        ]
+
+        # 创建复选框组
+        checkboxes = [ft.Checkbox(label=header, value=False) for header in headers]
+
+        def on_confirm(ev):
+            selected_cols = [cb.label for cb in checkboxes if cb.value]
+            getattr(self._page, "dialog").open = False
+            self._page.update()
+            if selected_cols:
+                self.filter_non_empty_rows(selected_cols)
+            else:
+                self._page.snack_bar = ft.SnackBar(ft.Text("未选择任何列"), open=True)
+                self._page.update()
+
+        # ✅ 用 setattr 而不是直接赋值
+        setattr(
+            self._page,
+            "dialog",
+            ft.AlertDialog(
+                modal=True,
+                title=ft.Text("选择要剔除空值的列"),
+                content=ft.Container(
+                    content=ft.Column(
+                        controls=checkboxes,
+                        scroll=ft.ScrollMode.AUTO,
+                        expand=True,
+                    ),
+                    width=400,
+                    height=400,
+                ),
+                actions=[
+                    ft.TextButton("取消", on_click=lambda e: self.close_dialog()),
+                    ft.TextButton("确定", on_click=on_confirm),
+                ],
+            ),
+        )
+
+        # ✅ 同样用 getattr 来访问
+        getattr(self._page, "dialog").open = True
+        self._page.update()
+
+    def close_dialog(self):
+        dialog = getattr(self._page, "dialog", None)
+        if dialog:
+            dialog.open = False
+            self._page.update()
 
     def update_table(self, sheet_name: str):
         if not sheet_name:
@@ -211,6 +285,67 @@ class ExcelPreviewControl(ft.Column):
                 )
         self.excel_tool.save()
         self._page.update()
+
+    def filter_non_empty_rows(self, selected_cols: list[str]):
+        """剔除指定列为空的行，并覆写 Excel 文件"""
+        file_path = self.excel_tool.file_path
+        if not os.path.exists(file_path):
+            self._page.snack_bar = ft.SnackBar(ft.Text("文件不存在 ❌"), open=True)
+            self._page.update()
+            return
+
+        try:
+            sheet_name = self.sheet_dropdown.value
+            sheet = self.excel_tool.get_sheet(sheet_name)
+            row_count = self.excel_tool.get_row_count(sheet)
+            col_count = self.excel_tool.get_column_count(sheet)
+
+            headers = [
+                sheet.cell(row=self.excel_tool.header_row, column=col).value or f"Column {col}"
+                for col in range(1, col_count + 1)
+            ]
+
+            selected_col_indices = [
+                headers.index(col_name) + 1 for col_name in selected_cols if col_name in headers
+            ]
+
+            data_rows = self.excel_tool.read_range(
+                sheet,
+                start_row=self.excel_tool.header_row + 1,
+                start_col=1,
+                end_row=row_count,
+                end_col=col_count,
+                skip_headers=True
+            )
+
+            filtered_rows = []
+            for row in data_rows:
+                keep = all(
+                    str(row[idx - 1]).strip() != "" and row[idx - 1] is not None
+                    for idx in selected_col_indices
+                )
+                if keep:
+                    filtered_rows.append(row)
+
+            # 清空旧数据
+            for r in range(self.excel_tool.header_row + 1, row_count + 1):
+                for c in range(1, col_count + 1):
+                    sheet.cell(row=r, column=c).value = None
+
+            # 写回过滤后的数据
+            self.excel_tool.write_range(sheet, self.excel_tool.header_row + 1, 1, filtered_rows)
+            self.excel_tool.save()
+            self.update_table(sheet_name)
+
+            msg = f"✅ 已剔除 {len(data_rows) - len(filtered_rows)} 行空值数据，并覆写文件"
+            logger.success(msg)
+            self._page.snack_bar = ft.SnackBar(ft.Text(msg), open=True)
+            self._page.update()
+
+        except Exception as ex:
+            logger.error(f"剔除空值失败: {ex}")
+            self._page.snack_bar = ft.SnackBar(ft.Text(f"剔除失败: {ex}"), open=True)
+            self._page.update()
 
     def change_workbook(self, file_path: str):
         self.excel_tool.file_path = file_path
