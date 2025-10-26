@@ -1,6 +1,7 @@
 ﻿import flet as ft
 import flet_webview as ftwv
 from core.logger import logger
+from modes.mode_drive_api import get_spreadsheetToken, get_spreadsheet_Id
 
 class HomePage(ft.Column):
     """主页标签页"""
@@ -9,8 +10,11 @@ class HomePage(ft.Column):
         super().__init__()
         self.expand = True
         self.horizontal_alignment = ft.CrossAxisAlignment.START
+        self.dropdown_type = None
         self.dropdown_spreadsheet = None
         self.dropdown_sheet = None
+        self.files = []
+
 
     def build(self):
         # 获取 MainApp 实例（父容器）
@@ -20,8 +24,21 @@ class HomePage(ft.Column):
             self.page.snack_bar.open = True
             self.page.update()
             return
+
         spreadsheets = main_app.sheet_storage.get("spreadsheets")
         sheets = main_app.sheet_storage.get("sheets")
+
+        self.dropdown_type = ft.Dropdown(
+            label="选择类型",
+            value="sheet",
+            options=[
+                ft.dropdown.Option("sheet"),
+                ft.dropdown.Option("docx"),
+                # 可以根据需要添加更多类型选项
+            ],
+            width=150,
+            on_change=self._on_type_change,
+        )
 
         spreadsheet_options = (
             [ft.dropdown.Option(key) for key in spreadsheets]
@@ -60,7 +77,7 @@ class HomePage(ft.Column):
         update_button = ft.ElevatedButton(
             text="重新获取数据",
             icon=ft.Icons.REFRESH,
-            on_click=self._on_update_cache_click,
+            on_click=self.on_update_cache_click,
         )
 
         # 配置板块容器
@@ -70,6 +87,7 @@ class HomePage(ft.Column):
                     ft.Text("全局数据配置", size=20, weight=ft.FontWeight.BOLD),
                     ft.Row(
                         controls=[
+                            self.dropdown_type,
                             self.dropdown_spreadsheet,
                             self.dropdown_sheet,
                             update_button,
@@ -99,19 +117,87 @@ class HomePage(ft.Column):
             config_section,
         ]
 
+    def _on_type_change(self, e):
+        self._update_spreadsheet_dropdown()
+
+    def _update_spreadsheet_dropdown(self):
+        selected_type = self.dropdown_type.value
+        filtered_files = [f for f in self.files if f['type'] == selected_type]
+
+        options = [
+            ft.dropdown.Option(key=f['token'], text=f['name']) for f in filtered_files
+        ]
+
+        self.dropdown_spreadsheet.options = options
+        self.dropdown_spreadsheet.value = options[0].key if options else None
+        self.dropdown_spreadsheet.disabled = len(options) == 0
+        self.dropdown_spreadsheet.label = "暂无数据" if len(options) == 0 else "选择表格"
+
+        # 如果有选中值，触发更新 sheet 下拉框
+        if self.dropdown_spreadsheet.value:
+            self._on_spread_sheet_change(None)
+        else:
+            # 清空 sheet 下拉框
+            self.dropdown_sheet.options = []
+            self.dropdown_sheet.value = None
+            self.dropdown_sheet.disabled = True
+
+        self.page.update()
+
     def _on_spread_sheet_change(self, e):
         main_app = self.page.data.get("main_app") if hasattr(self, "page") else None
-        if main_app:
+        if main_app and main_app.auth_status:
+            spreadsheet_token = self.dropdown_spreadsheet.value
             main_app.drive_data["spreadsheet"] = self.dropdown_spreadsheet.value
             logger.info(f"表格token更新为{self.dropdown_spreadsheet.value}")
+            access_token = main_app.token_storage.get("user_token")
+
+            try:
+                sheets = get_spreadsheet_Id(access_token, spreadsheet_token)
+                options = [
+                    ft.dropdown.Option(key=s['sheet_id'], text=s['title']) for s in sheets
+                ]
+                self.dropdown_sheet.options = options
+                self.dropdown_sheet.value = options[0].key if options else None
+                self.dropdown_sheet.disabled = len(options) == 0
+                self.dropdown_sheet.label = "暂无数据" if len(options) == 0 else "选择表"
+
+                # 如果有选中值，触发 sheet change
+                if self.dropdown_sheet.value:
+                    self._on_sheet_change(None)
+            except Exception as ex:
+                logger.error(f"获取 sheets 失败: {ex}")
+                self.page.snack_bar = ft.SnackBar(ft.Text(f"获取 sheets 失败: {str(ex)}"))
+                self.page.snack_bar.open = True
+            self.page.update()
+        else:
+            logger.error("请先完成飞书授权")
     def _on_sheet_change(self, e):
         main_app = self.page.data.get("main_app") if hasattr(self, "page") else None
-        if main_app:
+        if main_app and main_app.auth_status:
             main_app.drive_data["sheet"] = self.dropdown_sheet.value
             logger.info(f"表id更新为{self.dropdown_sheet.value}")
+        else:
+            logger.error("请先完成飞书授权")
 
-    def _on_update_cache_click(self, e):
-        pass
+    def on_update_cache_click(self, e):
+        main_app = self.page.data.get("main_app") if hasattr(self, "page") else None
+        if main_app and main_app.auth_status:
+            access_token = main_app.token_storage.get("user_token")
+            try:
+                self.files = get_spreadsheetToken(access_token)
+                logger.info(f"获取文档数据成功=>{self.files}")
+                self._update_spreadsheet_dropdown()
+                self.page.snack_bar = ft.SnackBar(ft.Text("数据更新成功 ✅"))
+                self.page.snack_bar.open = True
+            except Exception as ex:
+                logger.error(f"获取 files 失败: {ex}")
+                self.page.snack_bar = ft.SnackBar(ft.Text(f"获取 files 失败: {str(ex)}"))
+                self.page.snack_bar.open = True
+
+            self.page.update()
+        else:
+            logger.error("请先进行飞书授权")
 
     def _add_browser_tab(self, e):
         """触发添加浏览器标签"""

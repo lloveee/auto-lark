@@ -47,6 +47,8 @@ class MainApp:
         self.setup_page()
         self.build_ui()
         self._check_stored_token()
+        self.home_page.on_update_cache_click(None)
+
         # 启动异步服务器
 
         self.page.run_task(self._start_local_server)
@@ -241,11 +243,11 @@ class MainApp:
 
     def _add_home_tab(self, index):
         """添加主页标签"""
-        home_page = HomePage()
+        self.home_page = HomePage()
 
         # 创建主页标签
         tab = ft.Tab(
-            content=home_page,
+            content=self.home_page,
             tab_content=ft.Row(
                 controls=[
                     ft.Icon(ft.Icons.HOME, size=16),
