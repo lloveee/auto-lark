@@ -69,6 +69,7 @@ pip install 'flet[all]'
 then launch the app:
 ```
 flet run main.py
+flet run --web main.py
 ```
 
 
