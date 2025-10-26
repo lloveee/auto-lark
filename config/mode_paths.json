@@ -1,0 +1,48 @@
+﻿{
+  "查履约": {
+        "files": [
+            {"name": "excel_input", "path": r"E:\pythonProject\查履约.xlsx"},
+            {"name": "excel_output", "path": r"E:\pythonProject\查履约 - 副本.xlsx"}
+        ],
+        "images": [
+            {"name": "chaoshi", "path": r"E:\pythonProject\chaoshi.png"},
+            {"name": "zhengzaizuo", "path": r"E:\pythonProject\zhengzaizuo.png"},
+            {"name": "yiwancheng", "path": r"E:\pythonProject\yiwancheng.png"},
+            {"name": "quxiao", "path": r"E:\pythonProject\quxiao.png"},
+            {"name": "xitongquxiao", "path": r"E:\pythonProject\xitongquxiao.png"},
+            {"name": "yunsongzhong", "path": r"E:\pythonProject\yunsongzhong.png"}
+        ]
+    },
+    "通过样品": {
+        "files": [
+            {"name": "excel_path", "path": r"E:\pythonProject\达人任务.xlsx"},
+            {"name": "output_path", "path": r"E:\pythonProject\达人任务结果.xlsx"},
+            {"name": "chat_message_path", "path": r"E:\pythonProject\达人信息.txt"},
+            {"name": "log_file", "path": r"E:\pythonProject\send_log.txt"}
+        ],
+        "images": [
+            {"name": "copy_btn", "path": r"E:\pythonProject\copy_btn.png"},
+            {"name": "fasongbuliao", "path": r"E:\pythonProject\fasongbuliao.png"}
+        ]
+    },
+    "查到货": {
+        "files": [
+            {"name": "csv_path", "path": r"E:\pythonProject\送样未到达订单号.csv"},
+            {"name": "excel_path", "path": r"E:\pythonProject\送样未到达订单号日志.xlsx"}
+        ],
+        "images": []
+    },
+    "催视频码": {
+        "files": [
+            {"name": "orders_file", "path": r"E:\pythonProject\darenxinxi\订单号.xlsx"},
+            {"name": "message_file", "path": r"E:\pythonProject\darenxinxi\message.xlsx"},
+            {"name": "log_file", "path": r"E:\pythonProject\darenxinxi\运行日志.xlsx"}
+        ],
+        "images": [
+            {"name": "liaotiananniu", "path": r"E:\pythonProject\darenxinxi\liaotiananniu.png"},
+            {"name": "fasongbuliao", "path": r"E:\pythonProject\darenxinxi\fasongbuliao.png"},
+            {"name": "fasongbuliao2", "path": r"E:\pythonProject\darenxinxi\fasongbuliao2.png"},
+            {"name": "sendamessage", "path": r"E:\pythonProject\darenxinxi\sendamessage.png"}
+        ]
+    }
+}

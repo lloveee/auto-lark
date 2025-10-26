@@ -1,17 +1,9 @@
 # feishu_auth.py
 import requests
-import threading
 import webbrowser
 import time
-from localserver import run_server, last_code
-
-APP_ID = "cli_a871ad50e192100b"         # 替换成你的 app_id
-APP_SECRET = "pLAlJXXXdtHYNnrVN0rwsbMgy1TD6OLO"        # 替换成你的 app_secret
-REDIRECT_URI = "http%3A%2F%2Flocalhost%3A3000%2Fcallback"
-def start_local_server():
-    thread = threading.Thread(target=run_server, daemon=True)
-    thread.start()
-    time.sleep(1)  # 等待服务器启动
+from modes.feishu.localserver import last_code
+from core.env import APP_ID, APP_SECRET, REDIRECT_URI
 
 def get_authorize_url(state="STATE"):
     return (
@@ -41,15 +33,14 @@ def exchange_code_for_token(code):
         data = resp.json()
         if data.get("code") == 0:
             print("成功获取 user_access_token！")
+            print(data)
 
-            return data["access_token"]
+            return data["access_token"], data["expires_in"]
         else:
             raise Exception(f"Feishu error: {data}")
     else:
         raise Exception(f"HTTP {resp.status_code}: {resp.text}")
 
 def start_authorize_flow():
-    """仅启动本地服务 + 打开浏览器，不阻塞"""
-    start_local_server()
     url = get_authorize_url()
     webbrowser.open(url)

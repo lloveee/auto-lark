@@ -146,6 +146,7 @@ venv.bak/
 
 # 数据文件
 data/
+automation.log
 
 # Spyder project settings
 .spyderproject

@@ -61,6 +61,19 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ------
 
+To run the app, you need first install flet:
+
+```
+pip install 'flet[all]'
+```
+then launch the app:
+```
+flet run main.py
+```
+
+
+
+
 ## 📂 五、项目依赖列表
 
 以下为主要依赖：

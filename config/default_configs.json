@@ -1,0 +1,39 @@
+﻿{
+    "查履约": {
+        "search_box_position_lu": {"value": [58, 270], "comment": "# 左上搜索框坐标（示例，需调整）"},
+        "search_box_position_ru": {"value": [1159, 241], "comment": "# 右上搜索框坐标（示例，需调整）"},
+        "search_box_position_ld": {"value": [58, 778], "comment": "# 左下搜索框坐标（示例，需调整）"},
+        "search_box_position_rd": {"value": [1157, 742], "comment": "# 右下搜索框坐标（示例，需调整）"},
+        "lu_region": {"value": [0, 0, 960, 540], "comment": "# 左上 (left, top, width, height)"},
+        "ru_region": {"value": [960, 0, 960, 540], "comment": "# 右上"},
+        "ld_region": {"value": [0, 540, 960, 540], "comment": "# 左下"},
+        "rd_region": {"value": [960, 540, 960, 540], "comment": "# 右下"}
+    },
+    "通过样品": {
+        "POS_SEARCH_BOX": {"value": [714, 406], "comment": "# 搜索框"},
+        "POS_SEARCH_RESULT": {"value": [739, 459], "comment": "# 搜索结果（若需点击）"},
+        "POS_EXPAND_DETAIL": {"value": [1554, 556], "comment": "# 展开详情按钮"},
+        "REGION_TEXT_START": {"value": [757, 566], "comment": "# 框选文字起点"},
+        "REGION_TEXT_END": {"value": [846, 566], "comment": "# 框选文字终点"},
+        "POS_ORDER_BTN": {"value": [859, 690], "comment": "# 点击按钮复制订单号"},
+        "POS_CHAT_BTN": {"value": [808, 672], "comment": "# 达人聊天按钮"},
+        "POS_SEND_BTN": {"value": [515, 823], "comment": "# send按钮（如果需要先点 send 再点输入框）"},
+        "POS_CHAT_BOX": {"value": [514, 918], "comment": "# 聊天框输入位置"},
+        "POS_AFTER_SEND": {"value": [391, 20], "comment": "# 发送后点击的指定位置"},
+        "POS_CLICK1": {"value": [616, 553], "comment": ""},
+        "POS_CLICK2": {"value": [1553, 332], "comment": ""},
+        "POS_CLOSE1": {"value": [970, 20], "comment": ""},
+        "POS_CLOSE2": {"value": [732, 20], "comment": ""}
+    },
+    "查到货": {
+        "search_box": {"value": [987, 250], "comment": "# 搜索框"},
+        "pick_box": {"value": [1490, 628], "comment": "# 点击物流信息按钮"},
+        "date_box": {"value": [1539, 688], "comment": "# 日期文本"},
+        "close_box": {"value": [1855, 973], "comment": "# ❗物流弹窗的关闭按钮（如果是弹窗）"}
+    },
+    "催视频码": {
+        "search_box_click_pos": {"value": [683, 387], "comment": ""},
+        "back_to_search_pos": {"value": [168, 19], "comment": ""},
+        "message_input_pos": {"value": [510, 918], "comment": "# 备用，未使用"}
+    }
+}
