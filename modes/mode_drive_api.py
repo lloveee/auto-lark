@@ -5,17 +5,18 @@ spreadsheetToken
 sheetId
 """
 import requests
+from core.env import SPREADSHEET_TOKEN
 
 def get_spreadsheetToken(access_token, page_size = 50):
     url = f"https://open.feishu.cn/open-apis/drive/v1/files?"
-    f"page_size={page_size}&user_id_type=open_id"
+    f"page_size={page_size}&user_id_type=user_id"
 
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
-
-    try:
+    """
+        try:
         resp = requests.get(url, headers=headers)
         data = resp.json()
         code = data.get("code")
@@ -29,6 +30,15 @@ def get_spreadsheetToken(access_token, page_size = 50):
     except Exception as e:
         print(e)
         raise e
+    """
+    return [
+            {
+                "name":"公司",
+                "parent_token":"fldcnCEG903UUB4fUqfysdabcef",
+                "token":SPREADSHEET_TOKEN,
+                "type":"sheet"
+            }
+    ]
 """
 {
     "code":0,

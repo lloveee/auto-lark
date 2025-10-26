@@ -8,7 +8,7 @@ from core.env import APP_ID, APP_SECRET, REDIRECT_URI
 def get_authorize_url(state="STATE"):
     return (
         f"https://accounts.feishu.cn/open-apis/authen/v1/authorize"
-        f"?client_id={APP_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope=docs:doc%20drive:drive%20sheets:spreadsheet&state={state}"
+        f"?client_id={APP_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope=docs:doc%20drive:drive%20sheets:spreadsheet%20contact:user.employee_id:readonly&state={state}"
     )
 
 def wait_for_code(timeout=120):

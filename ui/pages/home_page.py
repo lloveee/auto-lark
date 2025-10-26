@@ -1,6 +1,7 @@
 ﻿import flet as ft
 import flet_webview as ftwv
 from core.logger import logger
+from core.env import SPREADSHEET_TOKEN
 from modes.mode_drive_api import get_spreadsheetToken, get_spreadsheet_Id
 
 class HomePage(ft.Column):
@@ -127,6 +128,7 @@ class HomePage(ft.Column):
         options = [
             ft.dropdown.Option(key=f['token'], text=f['name']) for f in filtered_files
         ]
+        logger.info(f"sheet_token=>{options[0].key}" )
 
         self.dropdown_spreadsheet.options = options
         self.dropdown_spreadsheet.value = options[0].key if options else None
@@ -148,7 +150,7 @@ class HomePage(ft.Column):
         main_app = self.page.data.get("main_app") if hasattr(self, "page") else None
         if main_app and main_app.auth_status:
             spreadsheet_token = self.dropdown_spreadsheet.value
-            main_app.drive_data["spreadsheet"] = self.dropdown_spreadsheet.value
+            main_app.sheet_storage.set("spreadsheets", self.dropdown_spreadsheet.value)
             logger.info(f"表格token更新为{self.dropdown_spreadsheet.value}")
             access_token = main_app.token_storage.get("user_token")
 
@@ -175,7 +177,7 @@ class HomePage(ft.Column):
     def _on_sheet_change(self, e):
         main_app = self.page.data.get("main_app") if hasattr(self, "page") else None
         if main_app and main_app.auth_status:
-            main_app.drive_data["sheet"] = self.dropdown_sheet.value
+            main_app.sheet_storage.set("sheets", self.dropdown_sheet.value)
             logger.info(f"表id更新为{self.dropdown_sheet.value}")
         else:
             logger.error("请先完成飞书授权")

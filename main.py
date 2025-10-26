@@ -33,7 +33,6 @@ class MainApp:
         self.console_expanded = True
         self.auth_status = False
         self.auth_indicator = None
-        self.drive_data = None
 
         #storage
         self.token_storage = Storage(TOKEN_STORE_FILE)
@@ -92,7 +91,6 @@ class MainApp:
             tooltip="授权状态(只读)",
         )
 
-
         #self._set_auth_status()
 
         # 尝试调用飞书授权
@@ -102,7 +100,6 @@ class MainApp:
             on_click=self._toggle_auth,
             icon_size=20,
         )
-
         # 添加浏览器标签页按钮
         add_tab_btn = ft.IconButton(
             icon=ft.Icons.ADD,
