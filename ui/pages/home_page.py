@@ -11,10 +11,10 @@ class HomePage(ft.Column):
         super().__init__()
         self.expand = True
         self.horizontal_alignment = ft.CrossAxisAlignment.START
-        self.dropdown_type = None
         self.dropdown_spreadsheet = None
         self.dropdown_sheet = None
         self.files = []
+        self.has_cache = False
 
 
     def build(self):
@@ -29,17 +29,8 @@ class HomePage(ft.Column):
         spreadsheets = main_app.sheet_storage.get("spreadsheets")
         sheets = main_app.sheet_storage.get("sheets")
 
-        self.dropdown_type = ft.Dropdown(
-            label="选择类型",
-            value="sheet",
-            options=[
-                ft.dropdown.Option("sheet"),
-                ft.dropdown.Option("docx"),
-                # 可以根据需要添加更多类型选项
-            ],
-            width=150,
-            on_change=self._on_type_change,
-        )
+        if spreadsheets and sheets:
+            self.has_cache = True
 
         spreadsheet_options = (
             [ft.dropdown.Option(key) for key in spreadsheets]
@@ -88,7 +79,6 @@ class HomePage(ft.Column):
                     ft.Text("全局数据配置", size=20, weight=ft.FontWeight.BOLD),
                     ft.Row(
                         controls=[
-                            self.dropdown_type,
                             self.dropdown_spreadsheet,
                             self.dropdown_sheet,
                             update_button,
@@ -122,8 +112,7 @@ class HomePage(ft.Column):
         self._update_spreadsheet_dropdown()
 
     def _update_spreadsheet_dropdown(self):
-        selected_type = self.dropdown_type.value
-        filtered_files = [f for f in self.files if f['type'] == selected_type]
+        filtered_files = [f for f in self.files if f['type'] == 'sheet']
 
         options = [
             ft.dropdown.Option(key=f['token'], text=f['name']) for f in filtered_files

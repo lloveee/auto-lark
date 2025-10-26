@@ -37,7 +37,6 @@ class MainApp:
         #storage
         self.token_storage = Storage(TOKEN_STORE_FILE)
         self.sheet_storage = Storage(SHEET_STORE_FILE)
-
         # 保存引用到page.data供其他组件访问
         if self.page.data is None:
             self.page.data = {}
