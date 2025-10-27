@@ -1,7 +1,7 @@
 ﻿# storage.py
 import json
 from threading import RLock
-from src.core.env import PERSISTENCE_DIR
+from core.env import PERSISTENCE_DIR
 
 class Storage:
     """

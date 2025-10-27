@@ -2,8 +2,8 @@
 import requests
 import webbrowser
 import time
-from src.modes.feishu.localserver import last_code
-from src.core.env import APP_ID, APP_SECRET, REDIRECT_URI
+from modes.feishu.localserver import last_code
+from core.env import APP_ID, APP_SECRET, REDIRECT_URI
 
 def get_authorize_url(state="STATE"):
     return (

@@ -1,9 +1,9 @@
 ﻿import io
 
 import flet as ft
-from src.modes.excel.excel_tool import ExcelTool
+from modes.excel.excel_tool import ExcelTool
 import os
-from src.core.logger import logger
+from core.logger import logger
 from openpyxl import load_workbook
 
 class YangPingPage(ft.Column):

@@ -4,7 +4,7 @@ from openpyxl.utils import get_column_letter
 from typing import List, Any, Optional
 from openpyxl.worksheet.worksheet import Worksheet
 import os
-from src.core.env import EXCEL_DIR
+from core.env import EXCEL_DIR
 import uuid
 import time
 

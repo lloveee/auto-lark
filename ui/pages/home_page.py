@@ -1,6 +1,6 @@
 ﻿import flet as ft
-from src.core.logger import logger
-from src.modes.mode_drive_api import get_spreadsheetToken, get_spreadsheet_Id
+from core.logger import logger
+from modes.mode_drive_api import get_spreadsheetToken, get_spreadsheet_Id
 
 
 class HomePage(ft.Column):
