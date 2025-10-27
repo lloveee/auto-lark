@@ -3,7 +3,6 @@
 实现类似浏览器的多标签页框架
 """
 import flet as ft
-import flet_webview as ftwv
 import asyncio
 import time
 from ui.console import Console
@@ -15,7 +14,6 @@ from ui.pages.page_tongguo_yangpin import YangPingPage
 from ui.pages.page_cui_shipinma import ShiPingMaPage
 from ui.pages.page_cha_daohuo import DaoHuoPage
 from modes.feishu.feishu_auth import start_authorize_flow, exchange_code_for_token
-from modes.feishu.feishu_sheet import append_to_sheet, col_num_to_letter
 from core.env import TOKEN_STORE_FILE, SHEET_STORE_FILE
 from modes.persistence.storage import Storage
 
@@ -137,9 +135,9 @@ class MainApp:
             on_change=self._on_tab_change,
         )
 
-        self._add_home_tab(0) 
+        self._add_home_tab(0)
         self._add_lvyue_tab(1, "履约")
-        self._add_yangping_tab(2, "样品")
+        self._add_yangping_tab(2, "录入信息")
         self._add_shiping_tab(3, "视频码")
         self._add_daohuo_tab(4, "到货")
 
@@ -200,7 +198,6 @@ class MainApp:
             spacing=0,
             expand=True,
         )
-
         self.page.add(
             ft.Container(
                 content=main_content,
@@ -208,10 +205,10 @@ class MainApp:
                 expand=True,
             )
         )
+        logger.info(f"当前平台:{self.page.platform}")
         # 欢迎日志
         logger.info("应用程序启动成功")
         logger.success("欢迎使用CKLJJ现代化飞书")
-
     def _check_stored_token(self):
         """检查存储的令牌是否有效"""
         token = self.token_storage.get("user_token")
@@ -282,13 +279,19 @@ class MainApp:
         self.page.update()
         logger.info(f"{text}页面已加载")
     def _add_yangping_tab(self, index, text):
-        yangping_page = YangPingPage()
+        from modes.excel.excel_tool import ExcelTool
+        upload_excel = ExcelTool(
+            file_name="上传test.xlsx",
+            header_row=1,
+        )
+
+        yangping_page = YangPingPage(upload_excel)
 
         tab = ft.Tab(
             content=yangping_page,
             tab_content=ft.Row(
                 controls=[
-                    ft.Icon(ft.Icons.GIF_BOX, size=16),
+                    ft.Icon(ft.Icons.FILE_UPLOAD, size=16),
                     ft.Text(text, size=13),
                 ],
                 spacing=5,

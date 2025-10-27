@@ -1,5 +1,5 @@
 ﻿import flet as ft
-from core.logger import logger
+from src.core.logger import logger
 
 class BrowserTab(ft.Column):
     """单个浏览器标签页"""

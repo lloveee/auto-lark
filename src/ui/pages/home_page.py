@@ -1,8 +1,6 @@
 ﻿import flet as ft
-import flet_webview as ftwv
-from core.logger import logger
-from core.env import SPREADSHEET_TOKEN
-from modes.mode_drive_api import get_spreadsheetToken, get_spreadsheet_Id
+from src.core.logger import logger
+from src.modes.mode_drive_api import get_spreadsheetToken, get_spreadsheet_Id
 
 
 class HomePage(ft.Column):

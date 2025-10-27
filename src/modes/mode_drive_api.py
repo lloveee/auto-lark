@@ -5,7 +5,7 @@ spreadsheetToken
 sheetId
 """
 import requests
-from core.env import SPREADSHEET_TOKEN
+from src.core.env import SPREADSHEET_TOKEN
 
 def get_spreadsheetToken(access_token, page_size = 50):
     url = f"https://open.feishu.cn/open-apis/drive/v1/files?"

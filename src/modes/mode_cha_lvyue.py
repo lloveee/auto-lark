@@ -1,6 +1,6 @@
 import requests
-import webbrowser
-from core.env import SPREADSHEET_TOKEN, SHEET_ID
+
+
 def get_table_filter(access_token, spreadsheet_token, sheet_id):
     url = f"https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/{sheet_id}"
     headers = {

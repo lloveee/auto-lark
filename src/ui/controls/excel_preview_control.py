@@ -1,10 +1,8 @@
-from core.env import EXCEL_DIR
 from datetime import datetime
-from modes.mode_cha_lvyue import get_table_filter
-from modes.mode_cha_lvyue import get_table_value
-from core.logger import logger
-from modes.excel.excel_tool import ExcelTool
-from pathlib import Path
+from src.modes.mode_cha_lvyue import get_table_filter
+from src.modes.mode_cha_lvyue import get_table_value
+from src.core.logger import logger
+from src.modes.excel.excel_tool import ExcelTool
 import flet as ft
 import os
 
@@ -490,12 +488,18 @@ class ExcelPreviewControl(ft.Column):
             self._page.update()
 
     def change_workbook(self, file_path: str):
-        self.excel_tool.file_path = file_path
-        self.excel_tool.workbook = self.excel_tool.load_workbook(file_path) if os.path.exists(
-            file_path) else self.excel_tool.create_workbook()
-        self.sheet_dropdown.options = [ft.dropdown.Option(sheet) for sheet in self.excel_tool.get_sheet_names()]
-        self.sheet_dropdown.value = self.excel_tool.get_sheet_names()[0] if self.excel_tool.get_sheet_names() else None
-        self.update_table(self.sheet_dropdown.value)
+        try:
+            old = self.excel_tool.file_path
+            self.excel_tool.file_path = file_path
+            logger.success(f"切换文件路径{old} => {file_path}")
+            self.excel_tool.workbook = self.excel_tool.load_workbook(file_path) if os.path.exists(
+                file_path) else self.excel_tool.create_workbook()
+            self.sheet_dropdown.options = [ft.dropdown.Option(sheet) for sheet in self.excel_tool.get_sheet_names()]
+            self.sheet_dropdown.value = self.excel_tool.get_sheet_names()[
+                0] if self.excel_tool.get_sheet_names() else None
+            # self.update_table(self.sheet_dropdown.value)
+        except Exception as e:
+            logger.error(f"加载文件失败：{e}")
 
     def on_file_picked(self, e):
         if e.files and len(e.files) > 0:

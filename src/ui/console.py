@@ -3,7 +3,7 @@
 显示应用程序日志输出（支持拖拽调整高度）
 """
 import flet as ft
-from core.logger import logger
+from src.core.logger import logger
 
 
 class Console(ft.Container):
