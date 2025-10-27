@@ -137,7 +137,7 @@ class MainApp:
             on_change=self._on_tab_change,
         )
 
-        self._add_home_tab(0)
+        self._add_home_tab(0) 
         self._add_lvyue_tab(1, "履约")
         self._add_yangping_tab(2, "样品")
         self._add_shiping_tab(3, "视频码")
@@ -410,15 +410,14 @@ class MainApp:
                 logger.info("切换到履约页面")
             elif tab_type == "yangping":
                 logger.info("切换到样品页面")
-    
     def _toggle_console(self, e):
         """切换控制台显示/隐藏"""
         self.console_expanded = not self.console_expanded
-        
+
         # 找到控制台切换按钮
         console_header = self.console_container.content.controls[0]
         toggle_btn = console_header.content.controls[3]
-        
+
         if self.console_expanded:
             # 展开控制台
             self.console_container.content.controls[1].visible = True
@@ -431,7 +430,7 @@ class MainApp:
             toggle_btn.icon = ft.Icons.KEYBOARD_ARROW_UP
             toggle_btn.tooltip = "展开控制台"
             logger.info("控制台已最小化")
-        
+
         self.page.update()
 
     def _toggle_auth(self, e):

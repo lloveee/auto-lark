@@ -63,7 +63,7 @@ class ExcelPreviewControl(ft.Column):
                 shape=ft.RoundedRectangleBorder(radius=10),
                 padding=ft.padding.symmetric(horizontal=20, vertical=10),
             ),
-            on_click=self.on_load_data_from_remote,
+            on_click=self.show_sheet_selection_dialog,
         )
 
         self.refresh_button = ft.ElevatedButton(
@@ -125,6 +125,202 @@ class ExcelPreviewControl(ft.Column):
         # 初始化表格数据
         if self.sheet_dropdown.value:
             self.update_table(self.sheet_dropdown.value)
+
+    def show_sheet_selection_dialog(self, e):
+        """显示表选择对话框"""
+        main_app = self._page.data.get("main_app") if hasattr(self._page, "data") else None
+        if not main_app:
+            self._page.snack_bar = ft.SnackBar(ft.Text("无法找到主应用实例 ❌"))
+            self._page.snack_bar.open = True
+            self._page.update()
+            print(f"无法找到主应用实例")
+            return
+
+        if not main_app.auth_status:
+            self._page.snack_bar = ft.SnackBar(ft.Text("请先完成飞书授权 ✅"))
+            self._page.snack_bar.open = True
+            self._page.update()
+            return
+
+        # 获取所有表的字典 {title: sheet_id}
+        sheets = main_app.sheet_storage.get("sheets", {})
+
+        print(f"获取到的sheets: {sheets}")  # 调试信息
+
+        if not sheets or not isinstance(sheets, dict):
+            self._page.snack_bar = ft.SnackBar(ft.Text("没有可用的表 ❌"))
+            self._page.snack_bar.open = True
+            self._page.update()
+            return
+
+        # 清空之前的复选框
+        self.sheet_checkboxes = {}
+        checkbox_controls = []
+
+        # 添加全选/取消全选按钮
+        select_all_btn = ft.TextButton(
+            "全选",
+            on_click=lambda _: self.toggle_all_checkboxes(True)
+        )
+        deselect_all_btn = ft.TextButton(
+            "取消全选",
+            on_click=lambda _: self.toggle_all_checkboxes(False)
+        )
+
+        checkbox_controls.append(
+            ft.Row([select_all_btn, deselect_all_btn], spacing=10)
+        )
+        checkbox_controls.append(ft.Divider())
+
+        # 为每个表创建复选框，显示 title，但存储 sheet_id
+        for title, sheet_id in sheets.items():
+            checkbox = ft.Checkbox(
+                label=title,  # 显示表格名称
+                value=True,  # 默认全选
+            )
+            self.sheet_checkboxes[sheet_id] = checkbox  # 用 sheet_id 作为 key
+            checkbox_controls.append(checkbox)
+
+        print(f"创建了 {len(self.sheet_checkboxes)} 个复选框")  # 调试信息
+
+        # 创建对话框
+        self.sheet_selection_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("选择要加载的表", size=20, weight=ft.FontWeight.BOLD),
+            content=ft.Container(
+                content=ft.Column(
+                    controls=checkbox_controls,
+                    scroll=ft.ScrollMode.AUTO,
+                    tight=True,
+                ),
+                width=400,
+                height=min(400, len(checkbox_controls) * 50 + 100),  # 动态高度
+            ),
+            actions=[
+                ft.TextButton("取消", on_click=self.close_dialog),
+                ft.ElevatedButton(
+                    "确认加载",
+                    on_click=self.confirm_load_data,  # 改为新的方法
+                    style=ft.ButtonStyle(
+                        bgcolor=ft.Colors.BLUE_400,
+                        color=ft.Colors.WHITE,
+                    )
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        # 使用 page.open() 方法打开对话框
+        self._page.open(self.sheet_selection_dialog)
+
+        print("对话框已显示")  # 调试信息
+
+    def toggle_all_checkboxes(self, value: bool):
+        """全选或取消全选所有复选框"""
+        for checkbox in self.sheet_checkboxes.values():
+            checkbox.value = value
+        self._page.update()
+
+    def close_dialog(self, e):
+        """关闭对话框"""
+        if self.sheet_selection_dialog:
+            self._page.close(self.sheet_selection_dialog)
+            print("对话框已关闭")  # 调试信息
+
+    def confirm_load_data(self, e):
+        """确认加载数据"""
+        # 获取选中的表
+        selected_sheets = [
+            sheet_id for sheet_id, checkbox in self.sheet_checkboxes.items()
+            if checkbox.value
+        ]
+
+        print(f"选中的表: {selected_sheets}")  # 调试信息
+
+        # 关闭对话框
+        self.close_dialog(e)
+
+        # 调用加载方法
+        self.on_load_data_from_remote(selected_sheets)
+
+    def on_load_data_from_remote(self, selected_sheets):
+        """从远程加载数据（根据用户选择的表）"""
+        main_app = self._page.data.get("main_app") if hasattr(self._page, "data") else None
+        if not main_app:
+            self._page.snack_bar = ft.SnackBar(ft.Text("无法找到主应用实例 ❌"))
+            self._page.snack_bar.open = True
+            self._page.update()
+            print(f"无法找到主应用实例")
+            return
+
+        if not selected_sheets:
+            self._page.snack_bar = ft.SnackBar(ft.Text("未选择任何表 ⚠️"))
+            self._page.snack_bar.open = True
+            self._page.update()
+            return
+
+        token = main_app.token_storage.get("user_token")
+        spreadsheets_token = main_app.sheet_storage.get("spreadsheets")
+
+        codelist = [["订单号"]]
+        total_count = 0
+
+        for sheet_id in selected_sheets:
+            try:
+                value_range = get_table_filter(token, spreadsheets_token, sheet_id)
+                print(f"获取表数据成功:范围=> {value_range}")
+                logger.success(f"获取表数据成功:范围=> {value_range}")
+
+                values = get_table_value(token, spreadsheets_token, value_range)
+                if not values or len(values) < 2:
+                    logger.warning(f"{sheet_id} 表数据为空或无效")
+                    continue
+                header = values[0]
+                # 必须同时存在"序号"和"履约方式"
+                if "序号" not in header or "履约方式" not in header or "订单号" not in header:
+                    logger.warning(f"{sheet_id} 表头不含关键列，跳过：{header}")
+                    continue
+
+                idx_xh = header.index("序号")
+                idx_ly = header.index("履约方式")
+                idx_order = header.index("订单号")
+                i = 0
+                for row in values[1:]:
+                    try:
+                        xh = row[idx_xh] if idx_xh < len(row) else None
+                        ly = row[idx_ly] if idx_ly < len(row) else None
+                        order = row[idx_order] if idx_order < len(row) else None
+
+                        if xh not in (None, "", "null") and ly in (None, "", "null") and order not in (
+                        None, "", "null"):
+                            codelist.append([order])
+                            i = i + 1
+                    except Exception as row_ex:
+                        logger.warning(f"解析行时出错：{row_ex} => {row}")
+
+                total_count += i
+                logger.success(f"{sheet_id} ✅筛选完成，共提取 {i} 条")
+
+            except Exception as ex:
+                print(f"获取表数据失败: {ex}")
+                logger.error(f"获取表数据失败: {ex}")
+
+        try:
+            self.write_table_data(codelist)
+            self.update_table(self.sheet_dropdown.value)
+            self._page.snack_bar = ft.SnackBar(
+                ft.Text(f"✅ 成功加载 {total_count} 条数据"),
+                open=True
+            )
+            self._page.update()
+        except Exception as ex:
+            logger.error(f"提取订单号失败=>{ex}")
+            self._page.snack_bar = ft.SnackBar(
+                ft.Text(f"❌ 加载失败: {ex}"),
+                open=True
+            )
+            self._page.update()
+
     def update_table(self, sheet_name: str):
         if not sheet_name:
             self.data_table.columns = []
@@ -300,185 +496,6 @@ class ExcelPreviewControl(ft.Column):
         self.sheet_dropdown.options = [ft.dropdown.Option(sheet) for sheet in self.excel_tool.get_sheet_names()]
         self.sheet_dropdown.value = self.excel_tool.get_sheet_names()[0] if self.excel_tool.get_sheet_names() else None
         self.update_table(self.sheet_dropdown.value)
-
-    def on_load_data_from_remote(self, e):
-        """从远程加载数据（根据用户选择的表）"""
-        # 关闭对话框
-        self.close_dialog(e)
-
-        main_app = self._page.data.get("main_app") if hasattr(self._page, "data") else None
-        if not main_app:
-            self._page.snack_bar = ft.SnackBar(ft.Text("无法找到主应用实例 ❌"))
-            self._page.snack_bar.open = True
-            self._page.update()
-            return
-
-        # 获取选中的表
-        selected_sheets = [
-            sheet_id for sheet_id, checkbox in self.sheet_checkboxes.items()
-            if checkbox.value
-        ]
-
-        if not selected_sheets:
-            self._page.snack_bar = ft.SnackBar(ft.Text("未选择任何表 ⚠️"))
-            self._page.snack_bar.open = True
-            logger.warning("未选择任何表")
-            self._page.update()
-            return
-
-        token = main_app.token_storage.get("user_token")
-        spreadsheets_token = main_app.sheet_storage.get("spreadsheets")
-
-        codelist = [["订单号"]]
-        total_count = 0
-
-        for sheet_id in selected_sheets:
-            try:
-                value_range = get_table_filter(token, spreadsheets_token, sheet_id)
-                print(f"获取表数据成功:范围=> {value_range}")
-                logger.success(f"获取表数据成功:范围=> {value_range}")
-
-                values = get_table_value(token, spreadsheets_token, value_range)
-                if not values or len(values) < 2:
-                    logger.warning(f"{sheet_id} 表数据为空或无效")
-                    continue
-                header = values[0]
-                # 必须同时存在"序号"和"履约方式"
-                if "序号" not in header or "履约方式" not in header or "订单号" not in header:
-                    logger.warning(f"{sheet_id} 表头不含关键列，跳过：{header}")
-                    continue
-
-                idx_xh = header.index("序号")
-                idx_ly = header.index("履约方式")
-                idx_order = header.index("订单号")
-                i = 0
-                for row in values[1:]:
-                    try:
-                        xh = row[idx_xh] if idx_xh < len(row) else None
-                        ly = row[idx_ly] if idx_ly < len(row) else None
-                        order = row[idx_order] if idx_order < len(row) else None
-
-                        if xh not in (None, "", "null") and ly in (None, "", "null") and order not in (
-                        None, "", "null"):
-                            codelist.append([order])
-                            i = i + 1
-                    except Exception as row_ex:
-                        logger.warning(f"解析行时出错：{row_ex} => {row}")
-
-                total_count += i
-                logger.success(f"{sheet_id} ✅筛选完成，共提取 {i} 条")
-
-            except Exception as ex:
-                print(f"获取表数据失败: {ex}")
-                logger.error(f"获取表数据失败: {ex}")
-
-        try:
-            self.write_table_data(codelist)
-            self.update_table(self.sheet_dropdown.value)
-            self._page.snack_bar = ft.SnackBar(
-                ft.Text(f"✅ 成功加载 {total_count} 条数据"),
-                open=True
-            )
-            self._page.update()
-        except Exception as ex:
-            logger.error(f"提取订单号失败=>{ex}")
-            self._page.snack_bar = ft.SnackBar(
-                ft.Text(f"❌ 加载失败: {ex}"),
-                open=True
-            )
-            self._page.update()
-    def show_sheet_selection_dialog(self, e):
-        """显示表选择对话框"""
-        main_app = self._page.data.get("main_app") if hasattr(self._page, "data") else None
-        if not main_app:
-            self._page.snack_bar = ft.SnackBar(ft.Text("无法找到主应用实例 ❌"))
-            self._page.snack_bar.open = True
-            self._page.update()
-            return
-
-        if not main_app.auth_status:
-            self._page.snack_bar = ft.SnackBar(ft.Text("请先完成飞书授权 ✅"))
-            self._page.snack_bar.open = True
-            self._page.update()
-            return
-
-        # 获取所有表的列表
-        sheets = main_app.sheet_storage.get("sheets", [])
-        if not sheets:
-            self._page.snack_bar = ft.SnackBar(ft.Text("没有可用的表 ❌"))
-            self._page.snack_bar.open = True
-            self._page.update()
-            return
-
-        # 创建复选框列表
-        self.sheet_checkboxes = {}
-        checkbox_controls = []
-
-        # 添加全选/取消全选按钮
-        select_all_btn = ft.TextButton(
-            "全选",
-            on_click=lambda _: self.toggle_all_checkboxes(True)
-        )
-        deselect_all_btn = ft.TextButton(
-            "取消全选",
-            on_click=lambda _: self.toggle_all_checkboxes(False)
-        )
-
-        checkbox_controls.append(
-            ft.Row([select_all_btn, deselect_all_btn], spacing=10)
-        )
-        checkbox_controls.append(ft.Divider())
-
-        for sheet_id in sheets:
-            checkbox = ft.Checkbox(
-                label=f"表 ID: {sheet_id}",
-                value=True,  # 默认全选
-            )
-            self.sheet_checkboxes[sheet_id] = checkbox
-            checkbox_controls.append(checkbox)
-
-        # 创建对话框
-        self.sheet_selection_dialog = ft.AlertDialog(
-            modal=True,
-            title=ft.Text("选择要加载的表", size=20, weight=ft.FontWeight.BOLD),
-            content=ft.Container(
-                content=ft.Column(
-                    controls=checkbox_controls,
-                    scroll=ft.ScrollMode.AUTO,
-                    tight=True,
-                ),
-                width=400,
-                height=400,
-            ),
-            actions=[
-                ft.TextButton("取消", on_click=self.close_dialog),
-                ft.ElevatedButton(
-                    "确认加载",
-                    on_click=self.on_load_data_from_remote,
-                    style=ft.ButtonStyle(
-                        bgcolor=ft.Colors.BLUE_400,
-                        color=ft.Colors.WHITE,
-                    )
-                ),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        self._page.dialog = self.sheet_selection_dialog
-        self.sheet_selection_dialog.open = True
-        self._page.update()
-
-    def toggle_all_checkboxes(self, value: bool):
-        """全选或取消全选所有复选框"""
-        for checkbox in self.sheet_checkboxes.values():
-            checkbox.value = value
-        self._page.update()
-
-    def close_dialog(self, e):
-        """关闭对话框"""
-        if self.sheet_selection_dialog:
-            self.sheet_selection_dialog.open = False
-            self._page.update()
 
     def on_file_picked(self, e):
         if e.files and len(e.files) > 0:

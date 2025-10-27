@@ -1,4 +1,6 @@
 ﻿import flet as ft
+
+
 class LvYuePage(ft.Column):
     """查履约页面"""
 
@@ -9,8 +11,11 @@ class LvYuePage(ft.Column):
         self.alignment = ft.MainAxisAlignment.START
         self.excel = excel
 
-    def build(self):
+        # 直接在初始化时构建UI，而不是使用build方法
+        self._build_ui()
 
+    def _build_ui(self):
+        """构建UI"""
         card_container = ft.Card(
             content=ft.Column(
                 controls=[
@@ -27,7 +32,7 @@ class LvYuePage(ft.Column):
             surface_tint_color=ft.Colors.GREY_100,
         )
 
-        # 页面控件集合
+        # 直接设置 controls
         self.controls = [
             card_container,
         ]

@@ -4,6 +4,7 @@ from core.logger import logger
 from core.env import SPREADSHEET_TOKEN
 from modes.mode_drive_api import get_spreadsheetToken, get_spreadsheet_Id
 
+
 class HomePage(ft.Column):
     """主页标签页"""
 
@@ -15,7 +16,6 @@ class HomePage(ft.Column):
         self.dropdown_sheet = None
         self.files = []
         self.has_cache = False
-
 
     def build(self):
         # 获取 MainApp 实例（父容器）
@@ -49,21 +49,24 @@ class HomePage(ft.Column):
             on_change=self._on_spread_sheet_change,
         )
 
-        sheets_options = (
-            [ft.dropdown.Option(key) for key in sheets]
-            if sheets and isinstance(sheets, (dict, list)) and len(sheets) > 0
-            else []
-        )
+        # 修改：sheets 现在是字典 {title: sheet_id}
+        sheets_options = []
+        if sheets and isinstance(sheets, dict):
+            # 使用 title 作为显示文本，sheet_id 作为值
+            sheets_options = [
+                ft.dropdown.Option(key=sheet_id, text=title)
+                for title, sheet_id in sheets.items()
+            ]
 
         hint_text = "暂无数据" if not sheets_options else "选择表ID"
 
         self.dropdown_sheet = ft.Dropdown(
-            value= sheets_options[0] if sheets_options and len(sheets_options) > 0 else None,
+            value=sheets_options[0].key if sheets_options and len(sheets_options) > 0 else None,
             label=hint_text,
             options=sheets_options,
             width=200,
             disabled=not sheets_options,
-            #on_change=self._on_sheet_change,
+            # on_change=self._on_sheet_change,
         )
 
         update_button = ft.ElevatedButton(
@@ -117,7 +120,7 @@ class HomePage(ft.Column):
         options = [
             ft.dropdown.Option(key=f['token'], text=f['name']) for f in filtered_files
         ]
-        logger.info(f"sheet_token=>{options[0].key}" )
+        logger.info(f"sheet_token=>{options[0].key}")
 
         self.dropdown_spreadsheet.options = options
         self.dropdown_spreadsheet.value = options[0].key if options else None
@@ -145,6 +148,8 @@ class HomePage(ft.Column):
 
             try:
                 sheets = get_spreadsheet_Id(access_token, spreadsheet_token)
+
+                # 修改：创建显示 title，值为 sheet_id 的选项
                 options = [
                     ft.dropdown.Option(key=s['sheet_id'], text=s['title']) for s in sheets
                 ]
@@ -154,14 +159,15 @@ class HomePage(ft.Column):
                 self.dropdown_sheet.label = "暂无数据" if len(options) == 0 else "选择表"
 
                 if main_app and main_app.auth_status:
-                    sheet_ids = [s["sheet_id"] for s in sheets if "sheet_id" in s]
-                    main_app.sheet_storage.set("sheets", sheet_ids)
-                    logger.info(f"表id更新为{sheet_ids}")
+                    # 修改：存储为字典 {title: sheet_id}
+                    sheets_dict = {s["title"]: s["sheet_id"] for s in sheets if "sheet_id" in s and "title" in s}
+                    main_app.sheet_storage.set("sheets", sheets_dict)
+                    logger.info(f"表数据更新为: {sheets_dict}")
                 else:
                     logger.error("请先完成飞书授权")
 
                 # 如果有选中值，触发 sheet change
-                #if self.dropdown_sheet.value:
+                # if self.dropdown_sheet.value:
                 #    self._on_sheet_change(None)
             except Exception as ex:
                 logger.error(f"获取 sheets 失败: {ex}")
@@ -170,6 +176,7 @@ class HomePage(ft.Column):
             self.page.update()
         else:
             logger.error("请先完成飞书授权")
+
     def _on_sheet_change(self, e):
         main_app = self.page.data.get("main_app") if hasattr(self, "page") else None
         if main_app and main_app.auth_status:
